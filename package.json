@@ -1,0 +1,68 @@
+{
+  "name": "okyimages",
+  "displayName": "okyimages",
+  "description": "OKY & Company upload images to own server.",
+  "version": "0.1.0",
+  "publisher": "fujiokio",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fujiokio/vscode-extension-okyimages"
+  },
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "okyimages.pasteImage",
+        "title": "粘贴图片"
+      },
+      {
+        "command": "okyimages.selectImage",
+        "title": "上传图片"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == markdown",
+          "command": "okyimages.pasteImage",
+          "group": "okyimages"
+        },
+        {
+          "when": "editorLangId == markdown",
+          "command": "okyimages.selectImage",
+          "group": "okyimages"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "crypto": "^1.0.1",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/sinon": "^17.0.3",
+    "@types/vscode": "^1.97.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.19.0",
+    "sinon": "^17.0.1"
+  }
+}
