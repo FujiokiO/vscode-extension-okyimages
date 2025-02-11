@@ -2,7 +2,7 @@
   "name": "okyimages",
   "displayName": "okyimages",
   "description": "OKY & Company upload images to own server.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "fujiokio",
   "repository": {
     "type": "git",

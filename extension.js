@@ -9,26 +9,41 @@ const { spawn } = require('child_process');
 const POST_URL = 'https://images.oky.ac.cn/api/upload';
 const GET_URL = 'https://images.oky.ac.cn/.netlify/images?url=';
 
-function generateFileName(originalPath) {
+// 使用 sharp 归一化图片（去除不同来源可能带来的元数据差异），确保相同图片生成相同哈希
+async function getNormalizedBuffer(filePath) {
+    try {
+      const ext = path.extname(filePath).toLowerCase();
+      const buffer = fs.readFileSync(filePath);
+      if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
+        // 归一化重编码（格式保持不变）
+        return await sharp(buffer).toBuffer();
+      }
+      return buffer;
+    } catch (error) {
+      return fs.readFileSync(filePath);
+    }
+  }
+  
+  // 将 generateFileName 改为异步函数，使用归一化后的 buffer 计算 MD5 哈希
+  async function generateFileName(originalPath) {
     const year = new Date().getFullYear();
     const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    
-    // 读取文件内容生成哈希
-    const fileBuffer = fs.readFileSync(originalPath);
+  
+    const normalizedBuffer = await getNormalizedBuffer(originalPath);
     const hash = crypto
-        .createHash('md5')       // 使用 MD5 算法
-        .update(fileBuffer)      // 输入文件内容
-        .digest('hex')           // 输出十六进制格式
-        .substring(0, 8);        // 取前8位字符（相当于4字节）
-
+      .createHash('md5')
+      .update(normalizedBuffer)
+      .digest('hex')
+      .substring(0, 8);
+  
     const ext = path.extname(originalPath);
     return `${year}-${month}-${hash}${ext}`;
-}
+  }
 
 async function uploadFile(filePath) {
     try {
         const fileStream = fs.createReadStream(filePath);
-        const fileName = generateFileName(filePath);
+        const fileName = await generateFileName(filePath);
         
         const formData = new FormData();
         formData.append('file', fileStream, fileName);
@@ -96,7 +111,7 @@ async function handlePastedImage(editor) {
                     `& "${scriptPath}" -imagePath "${imagePath}"`
                 ]);
 
-                const timer = setTimeout(() => powershell.kill(), 8000);
+                const timer = setTimeout(() => powershell.kill(), 15000);
                 let output = '';
 
                 powershell.on('error', (e) => {
@@ -164,7 +179,7 @@ async function handlePastedImage(editor) {
         fs.unlinkSync(imagePath);
         vscode.window.showInformationMessage('图片上传成功！');
     } catch (error) {
-        vscode.window.showErrorMessage(`图片上传失败: ${error.message}\n${error.stack}`);
+        vscode.window.showErrorMessage(`图片上传失败: ${error.message}\n${error.stack || ''}`);
     }
 }
 
@@ -179,15 +194,17 @@ async function handleSelectedImage() {
 
         const editor = vscode.window.activeTextEditor;
         if (!editor) return;
-
+        
         const imageUrl = await uploadFile(result[0].fsPath);
+        const imageName = path.basename(result[0].fsPath);
+
         await editor.edit(editBuilder => {
             editBuilder.insert(editor.selection.active, `![${imageName}](${imageUrl} "${imageName}")`);
         });
 
         vscode.window.showInformationMessage('图片上传成功！');
     } catch (error) {
-        vscode.window.showErrorMessage(`图片上传失败: ${error.message}\n${error.stack}`);
+        vscode.window.showErrorMessage(`图片上传失败: ${error.message}\n${error.stack || ''}`);
     }
 }
 
